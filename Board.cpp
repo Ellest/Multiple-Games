@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "BoardHead.h"
+#include "Board.h"
 using namespace std;
 #define numPiece 9
 

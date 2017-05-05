@@ -1,5 +1,7 @@
 #include "GameBase.h"
 
+#define WIDTH 6
+
 class NineAlmonds : public GameBase
 {
 private:
@@ -33,12 +35,12 @@ public:
 	virtual int prompt(unsigned int &a, unsigned int &b, int overLoad);
 
 	// Turn method 
-	int turn();
+	int turnHelper(int board[WIDTH][WIDTH], int x1, int y1, int x2, int y2);
 
 	// overloaded turn function to be used when user decides to continue turn
 	// this function is idential to the regular turn() function besides the fact that the helper method to check availability of further moves is called as soon as this overloaded turn function is called. 
 	// Instead of using the two coordinates extracted from user input, it uses the two variables that were passed from the turn() function to use the ending space from the previous move as the piece to be moved for the following move.
-	int turn(int x, int y);
+	int turn(int x = 0, int y = 0);
 
 	// play  method
 	int play();

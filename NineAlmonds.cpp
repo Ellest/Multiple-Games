@@ -551,11 +551,87 @@ int NineAlmonds::prompt(unsigned int &a, unsigned int &b, int overLoad)
 	}
 }
 
-int NineAlmonds::turn()
+int NineAlmonds::turnHelper(int board[WIDTH][WIDTH], int x1, int y1, int x2, int y2)
 {
+	//utilize the helper method to get the piece that was on that specific index of the board (overtaken)
+	brownAlmond& b = getPieceByCord(x1, y1);
+	// delete the piece from the board display
+	board[b.getIndex()].display = "";
+	// set the index of the piece with coordinate -1,-1 which indicates a deleted piece
+	b.setIndex(WIDTH, -1, -1);
+	// set x and y coordinates to -1
+	b.setX(-1);
+	b.setY(-1);
+	//utilize the helper method to get the piece that was on that specific index of the board (piece selected)
+	brownAlmond& b2 = getPieceByCord(x1, y1);
+	// empty out display at original location
+	board[b2.getIndex()].display = "";
+	// set the piece with the new coordinates
+	b2.setX(x2);
+	b2.setY(y2);
+	b2.setIndex(WIDTH, x2, y2);
+	// set the display on the board
+	board[b2.getIndex()].display = "A";
+	// if the board printed successfully
+	if (printBoard(board, WIDTH, WIDTH) == Success){
+		// check if the game has been completed. This will prevent users from being prompted if the game is already finished
+		if (done()){
+			return Done;
+		}
+		// check if there is a stalemate. This will prevent users from being prompted if the game hit a stalemate
+		if (stalemate()){
+			return StaleMate;
+		}
+		// display the user's move
+		printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
+		cout << printString << endl;
+		// prompt the user if he/she wants to continue the turn
+		cout << "Continue this turn (y/n)?  ";
+		string s;
+		getline(cin, s);
+		// keep prompting until the user answers y for yes or n for no.
+		while (s != "y" && s != "n"){
+			cout << "Continue this turn (y/n)?  ";
+			getline(cin, s);
+		}
+		// if yes
+		if (s == "y"){
+			// run the overloaded turn function with the ending coordinates as the beginnign coordinates for the next move in the turn.
+			int t = turn(x2, y2);
+			// re run turn until it returns the proper value
+			while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
+				t = turn(x2, y2);
+			}
+			// return the return value accordingly
+			return t;
+		}
+		else {
+		// if the user decides to end the turn dispose of his moves so far so that the move display will start over in the following turn. 
+			printString = "";
+		// return success if the user indicated n to end the turn.
+			return Success;
+		}
+	}
+}
+
+// Turn method 
+// Instead of using the two coordinates extracted from user input, it uses the two variables that were passed from the turn() function to use the ending space from the previous move as the piece to be moved for the following move.
+int NineAlmonds::turn(int x = 0, int y = 0) 
+{
+
+	if (x != 0 or y != 0){
+		vector<brownAlmond> checkList;
+		checkMove(checkList, x, y);
+		// if there aren't any valid moves available then return Stuck to turn() which will then return Stuck to play() to tell the user that he/she is stuck and cannot continue the turn.
+		if (checkList.size() < 1){
+			printString = "";
+			checkList.clear();
+			return Stuck;
+		}
+	}
 	// 4 unsigned integers to be used for extraction
-	unsigned int x1 = 0;
-	unsigned int y1 = 0;
+	unsigned int x1 = x;
+	unsigned int y1 = y;
 	unsigned int x2 = 0;
 	unsigned int y2 = 0;
 	// prompts the user
@@ -598,66 +674,9 @@ int NineAlmonds::turn()
 				// if the move was down
 				if (y1 - 2 == y2){
 					// checks if there exists a piece below the piece selected to be overtaken.
-					if (board[WIDTH * (y1)+(x1 + 1)].display == "A"){
+					if (board[WIDTH * (y1) + (x1 + 1)].display == "A"){
 						//utilize the helper method to get the piece that was on that specific index of the board (overtaken)
-						brownAlmond& b = getPieceByCord(x1, y1 - 1);
-						// delete the piece from the board display
-						board[b.getIndex()].display = "";
-						// set the index of the piece with coordinate -1,-1 which indicates a deleted piece
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						// set x and y coordinates to -1
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						//utilize the helper method to get the piece that was on that specific index of the board (piece selected)
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						// empty out display at original location
-						board[b2.getIndex()].display = "";
-						// set the piece with the new coordinates
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						// set the display on the board
-						board[b2.getIndex()].display = "A";
-						// if the board printed successfully
-						print();
-
-						// check if the game has been completed. This will prevent users from being prompted if the game is already finished
-						if (done()){
-							return Done;
-						}
-						// check if there is a stalemate. This will prevent users from being prompted if the game hit a stalemate
-						if (stalemate()){
-							return StaleMate;
-						}
-						// display the user's move
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						// prompt the user if he/she wants to continue the turn
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						// keep prompting until the user answers y for yes or n for no.
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						// if yes
-						if (s == "y"){
-							// run the overloaded turn function with the ending coordinates as the beginnign coordinates for the next move in the turn.
-							int t = turn(x2, y2);
-							// re run turn until it returns the proper value
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							// return the return value accordingly
-							return t;
-						}
-						else {
-							// if the user decides to end the turn dispose of his moves so far so that the move display will start over in the following turn. 
-							printString = "";
-							// return success if the user indicated n to end the turn.
-							return Success;
-						}
+						return turnHelper(board, x1, y1 - 1, x2, y2);
 					}
 					// if there isn't a piece to be over taken then it is not a valid move.
 					else {
@@ -668,49 +687,8 @@ int NineAlmonds::turn()
 				else if (y1 + 2 == y2){
 					// checks if a piece exits a square above to be overtaken. 
 					if (board[WIDTH * (y1 + 2) + (x1 + 1)].display == "A"){
+						return turnHelper(board, x1, y1 + 1, x2, y2);
 						// gets piece by cord
-						brownAlmond& b = getPieceByCord(x1, y1 + 1);
-						board[b.getIndex()].display = "";
-						// delte the piece
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						// get the piece being moved
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify the piece to the new cordinate
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						// modifies the printString to indicate moves.
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
 					}
 					else {
 						return TurnError;
@@ -718,55 +696,12 @@ int NineAlmonds::turn()
 				}
 			}
 			// else if the user's inputted moves indicated a move either to the left or to the right
-			else if ((y1 == y2) && (x1 == x2 - 2 || x1 == x2 + 2)){
+			else if((y1 == y2) && (x1 == x2 - 2 || x1 == x2 + 2)){
 				// if the user tried to move to the left. Identical reasoning applies as the first case with lengthy comments to show the steps.
 				if (x1 - 2 == x2){
 					// check if there is a piece to be overtaken to the left of the selected piece.
 					if (board[WIDTH * (y1 + 1) + (x1)].display == "A"){
-						// get piece being overtaken
-						brownAlmond& b = getPieceByCord(x1 - 1, y1);
-						// delete display
-						board[b.getIndex()].display = "";
-						// delete piece
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						// get piece being moved
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						// empty original spot
-						board[b2.getIndex()].display = "";
-						// modify piece
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+						return turnHelper(board, x1 - 1, y1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -776,47 +711,8 @@ int NineAlmonds::turn()
 				else if (x1 == x2 - 2){
 					// once again identical explanations apply to the steps here as the first case.
 					// if there is a piece to be overtaken to the right
-					if (board[WIDTH * (y1 + 1) + (x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1);
-						//delete piece overtaken
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify piece being moved
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+					if (board[WIDTH * (y1 + 1)+(x1 + 2)].display == "A"){
+						return turnHelper(board, x1 + 1, y1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -830,47 +726,7 @@ int NineAlmonds::turn()
 					// once again identical explanations apply to the steps here as the first case.
 					// if there is a piece to be overtaken at northeast
 					if (board[WIDTH * (y1 + 2) + (x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1 + 1);
-						// delete piece overtaken
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify moved piece
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(6, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+						return turnHelper(board, x1 + 1, y1 + 1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -880,48 +736,8 @@ int NineAlmonds::turn()
 				else if (y2 == y1 - 2){
 					// once again identical explanations apply to the steps here as the first case.
 					// check if there is a piece to be overtaken to the southeast
-					if (board[WIDTH * (y1)+(x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1 - 1);
-						// delete piece being overtaken
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify moved piece.
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+					if (board[WIDTH * (y1) + (x1 + 2)].display == "A"){
+						return turnHelper(board, x1 + 1, y1 - 1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -935,47 +751,7 @@ int NineAlmonds::turn()
 					// once again identical explanations apply to the steps here as the first case.
 					// if there is a piece to be overtaken to the northwest
 					if (board[WIDTH * (y1 + 2) + (x1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 - 1, y1 + 1);
-						// delete piece being overtaken
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify piece being moved
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+						return turnHelper(board, x1 - 1, y1 + 1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -985,47 +761,8 @@ int NineAlmonds::turn()
 				else if (y2 == y1 - 2){
 					// once again identical explanations apply to the steps here as the first case.
 					// if there is a piece to be overtaken to the southwest.
-					if (board[WIDTH * (y1)+(x1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 - 1, y1 - 1);
-						// delete piece overtaken
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						// modify new piece
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " " + to_string(x1) + "," + to_string(y1) + " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else {
-							printString = "";
-							return Success;
-						}
+					if (board[WIDTH * (y1) + (x1)].display == "A"){
+						return turnHelper(board, x1 - 1, y1 - 1, x2, y2);
 					}
 					else {
 						return TurnError;
@@ -1048,421 +785,6 @@ int NineAlmonds::turn()
 		}
 	}
 	// if there isn't a piece at the first coordinate specified.
-	else {
-		cout << "********* Invalid First Input! (None Existent Piece) ********* " << endl;
-		return TurnError;
-	}
-	return TurnError;
-}
-
-int NineAlmonds::turn(int x, int y)
-{
-	vector<brownAlmond> checkList;
-	checkMove(checkList, x, y);
-	// if there aren't any valid moves available then return Stuck to turn() which will then return Stuck to play() to tell the user that he/she is stuck and cannot continue the turn.
-	if (checkList.size() < 1){
-		printString = "";
-		checkList.clear();
-		return Stuck;
-	}
-	// from this point on the code is IDENTICAL to the regular turn() function besides using the two ints that were passed as parameters as the starting coordinate.
-	unsigned int x1 = x;
-	unsigned int y1 = y;
-	unsigned int x2 = 0;
-	unsigned int y2 = 0;
-	int check2 = prompt(x2, y2, 1);
-	while (check2 != Success && check2 != Quit){
-		check2 = prompt(x2, y2, 1);
-	}
-	if (check2 == Quit){
-		return Quit;
-	}
-
-	if (board[WIDTH * (y1 + 1) + (x1 + 1)].display == "A"){
-		if (board[WIDTH * (y2 + 1) + (x2 + 1)].display.empty()){
-			if (x1 == x2 && (y1 == y2 + 2 || y1 == y2 - 2)){
-				if (y1 - 2 == y2){
-					if (board[WIDTH * (y1)+(x1 + 1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1, y1 - 1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-				else if (y1 + 2 == y2){
-					if (board[WIDTH * (y1 + 2) + (x1 + 1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1, y1 + 1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-			}
-			else if ((y1 == y2) && (x1 == x2 - 2 || x1 == x2 + 2)){
-				if (x1 - 2 == x2){
-					if (board[WIDTH * (y1 + 1) + (x1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 - 1, y1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-				else if (x1 == x2 - 2){
-					if (board[WIDTH * (y1 + 1) + (x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-			}
-			else if (x2 == x1 + 2 && (y2 == y1 + 2 || y2 == y1 - 2)){
-				if (y2 == y1 + 2){
-					if (board[WIDTH * (y1 + 2) + (x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1 + 1);
-						cout << b.getIndex() << endl;
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-				else if (y2 == y1 - 2){
-					if (board[WIDTH * (y1)+(x1 + 2)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 + 1, y1 - 1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-			}
-			else if (x2 == x1 - 2 && (y2 == y1 + 2 || y2 == y1 - 2)){
-				if (y2 == y1 + 2){
-					if (board[WIDTH * (y1 + 2) + (x1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 - 1, y1 + 1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-				else if (y2 == y1 - 2){
-					if (board[WIDTH * (y1)+(x1)].display == "A"){
-						brownAlmond& b = getPieceByCord(x1 - 1, y1 - 1);
-						b.setX(REMOVE);
-						b.setY(REMOVE);
-						int ind1 = b.getIndex();
-						board[b.getIndex()].display = "";
-						b.setIndex(WIDTH, REMOVE, REMOVE);
-						brownAlmond& b2 = getPieceByCord(x1, y1);
-						board[b2.getIndex()].display = "";
-						b2.setX(x2);
-						b2.setY(y2);
-						b2.setIndex(WIDTH, x2, y2);
-						board[b2.getIndex()].display = "A";
-						print();
-						if (done()){
-							return Done;
-						}
-						if (stalemate()){
-							return StaleMate;
-						}
-						printString += " to " + to_string(x2) + "," + to_string(y2);
-						cout << printString << endl;
-						cout << endl << "Continue this turn (y/n)?  ";
-						string s;
-						getline(cin, s);
-						while (s != "y" && s != "n"){
-							cout << "Continue this turn (y/n)?  ";
-							getline(cin, s);
-						}
-						if (s == "y"){
-							int t = turn(x2, y2);
-							while (t != Success && t != Quit && t != Stuck && t != Done && t != StaleMate){
-								t = turn(x2, y2);
-							}
-							return t;
-						}
-						else if (s == "n"){
-							printString = "";
-							return Success;
-						}
-					}
-					else {
-						return TurnError;
-					}
-				}
-			}
-			else {
-				cout << "********* Invalid Input! (Invalid Move) ********* " << endl;
-				return TurnError;
-			}
-		}
-		else {
-			cout << "********* Invalid Second Input! (Destination Occupied) ********* " << endl;
-			return TurnError;
-		}
-	}
 	else {
 		cout << "********* Invalid First Input! (None Existent Piece) ********* " << endl;
 		return TurnError;
